@@ -1,0 +1,58 @@
+package cmd
+
+import (
+	"context"
+	"net/http"
+	"os"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/CyrilSbrodov/GopherAPIStore/cmd/config"
+	"github.com/CyrilSbrodov/GopherAPIStore/cmd/loggers"
+	"github.com/CyrilSbrodov/GopherAPIStore/internal/handlers"
+	"github.com/CyrilSbrodov/GopherAPIStore/internal/repositories"
+	"github.com/CyrilSbrodov/GopherAPIStore/pkg/client/postgresql"
+)
+
+type App struct {
+	server http.Server
+}
+
+func NewApp() *App {
+	srv := http.Server{}
+	return &App{server: srv}
+}
+
+func (a *App) Start() {
+	//определение роутера
+	router := chi.NewRouter()
+	logger := loggers.NewLogger()
+	cfg := config.ServerConfigInit()
+
+	client, err := postgresql.NewClient(context.Background(), 5, &cfg, logger)
+	checkError(err, logger)
+	//определение БД
+	//определение хендлера
+	//store := repositories.NewStoreGopher()
+	store, err := repositories.NewPGSStore(client, &cfg, logger)
+	checkError(err, logger)
+
+	handler := handlers.NewHandler(store, logger)
+	//регистрация хендлера
+	handler.Register(router)
+	a.server.Addr = cfg.Addr
+	a.server.Handler = router
+
+	logger.LogInfo("server is listen:", cfg.Addr, "start server")
+	if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logger.LogInfo("server not started:", cfg.Addr, "")
+	}
+	logger.LogInfo("server is listen:", cfg.Addr, "start server")
+}
+
+func checkError(err error, logger *loggers.Logger) {
+	if err != nil {
+		logger.LogErr(err, "")
+		os.Exit(1)
+	}
+}
