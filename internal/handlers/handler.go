@@ -280,23 +280,86 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 			return
 		}
 
-		orders, err := h.GetOrder(userSession.login)
-		if err != nil {
-			fmt.Println(err)
-		}
-		ordersJSON, err := json.Marshal(orders)
-		if err != nil {
-			fmt.Println(err)
+		statusCode, orders, err := h.GetOrder(userSession.login)
+		switch statusCode {
+		case http.StatusOK:
+			ordersJSON, err := json.Marshal(orders)
+			if err != nil {
+				h.logger.LogErr(err, "failed to marshal")
+				rw.Header().Set("Content-Type", "application/json")
+				rw.WriteHeader(http.StatusInternalServerError)
+				rw.Write([]byte(err.Error()))
+				return
+			}
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusOK)
+			rw.Write(ordersJSON)
+			return
+		case http.StatusNoContent:
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusNoContent)
+			rw.Write([]byte(err.Error()))
+			return
+		case http.StatusInternalServerError:
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
 			return
 		}
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		rw.Write(ordersJSON)
 	}
 }
 
 func (h *Handler) Balance() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie("session_token")
+		if err != nil {
+			if errors.Is(err, http.ErrNoCookie) {
+				// If the cookie is not set, return an unauthorized status
+				rw.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			// For any other type of error, return a bad request status
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		sessionToken := c.Value
+
+		// We then get the session from our session map
+		sessions.Mutex.Lock()
+		defer sessions.Mutex.Unlock()
+		userSession, exists := sessions.sessions[sessionToken]
+		if !exists {
+			// If the session token is not present in session map, return an unauthorized error
+			rw.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		// If the session is present, but has expired, we can delete the session, and return
+		// an unauthorized status
+		if userSession.isExpired() {
+			delete(sessions.sessions, sessionToken)
+			rw.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		balance, err := h.GetBalance(userSession.login)
+		if err != nil {
+			h.logger.LogErr(err, "")
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		ordersJSON, err := json.Marshal(balance)
+		if err != nil {
+			h.logger.LogErr(err, "")
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		rw.Write(ordersJSON)
 	}
 }
 
