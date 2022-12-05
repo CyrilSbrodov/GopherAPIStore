@@ -4,11 +4,13 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/CyrilSbrodov/GopherAPIStore/cmd/config"
 	"github.com/CyrilSbrodov/GopherAPIStore/cmd/loggers"
+	"github.com/CyrilSbrodov/GopherAPIStore/internal/agent"
 	"github.com/CyrilSbrodov/GopherAPIStore/internal/handlers"
 	"github.com/CyrilSbrodov/GopherAPIStore/internal/repositories"
 	"github.com/CyrilSbrodov/GopherAPIStore/pkg/client/postgresql"
@@ -28,15 +30,18 @@ func (a *App) Start() {
 	router := chi.NewRouter()
 	logger := loggers.NewLogger()
 	cfg := config.ServerConfigInit()
+	ticker := time.NewTicker(2 * time.Second)
 
 	client, err := postgresql.NewClient(context.Background(), 5, &cfg, logger)
 	checkError(err, logger)
 	//определение БД
-	//определение хендлера
-	//store := repositories.NewStoreGopher()
 	store, err := repositories.NewPGSStore(client, &cfg, logger)
 	checkError(err, logger)
-
+	//определение агента
+	accrualAgent := agent.NewAgent(store, *logger, cfg)
+	//запуск агента в отдельной горутине с тикером
+	go accrualAgent.Start(*ticker)
+	//определение хендлера
 	handler := handlers.NewHandler(store, logger)
 	//регистрация хендлера
 	handler.Register(router)

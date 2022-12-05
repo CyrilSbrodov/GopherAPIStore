@@ -18,7 +18,7 @@ var cfgSrv ServerConfig
 
 func ServerConfigInit() ServerConfig {
 	flag.StringVar(&cfgSrv.Addr, "a", "localhost:8282", "ADDRESS")
-	flag.StringVar(&cfgSrv.Accrual, "r", "localhost:8282", "ACCRUAL_SYSTEM_ADDRESS")
+	flag.StringVar(&cfgSrv.Accrual, "r", "localhost:8080", "ACCRUAL_SYSTEM_ADDRESS")
 	flag.StringVar(&cfgSrv.DatabaseURI, "d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "DATABASE_URI")
 	//"postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 	//"postgresql://postgres:postgres@postgres/praktikum?sslmode=disable" - tests

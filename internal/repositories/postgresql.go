@@ -203,6 +203,50 @@ func (p *PGSStore) GetBalance(login string) (storage.Balance, error) {
 	return balance, nil
 }
 
+func (p *PGSStore) GetAllOrders() ([]storage.Orders, error) {
+
+	var orders []storage.Orders
+	q := `SELECT orders.orders FROM orders WHERE status = 'REGISTERED' or status = 'PROCESSING' or status = 'NEW'`
+	rows, err := p.client.Query(context.Background(), q)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			p.logger.LogErr(err, "Failure to select object from table")
+			return nil, fmt.Errorf("no one orders")
+		}
+		p.logger.LogErr(err, "")
+		return nil, err
+	}
+	//добавление всех ордеров в слайс
+	for rows.Next() {
+		var order storage.Orders
+		err = rows.Scan(&order.Order)
+		if err != nil {
+			p.logger.LogErr(err, "Failure to scan object from table")
+			return nil, err
+		}
+		orders = append(orders, order)
+	}
+	return orders, nil
+}
+
+func (p *PGSStore) UpdateOrders(orders []storage.Orders) error {
+	tx, err := p.client.BeginTx(context.Background(), pgx.TxOptions{})
+	if err != nil {
+		p.logger.LogErr(err, "failed to begin transaction")
+		return err
+	}
+	defer tx.Rollback(context.Background())
+	q := `UPDATE orders SET status = $1, accrual = $2 WHERE orders.orders = $3`
+	for _, o := range orders {
+		if _, err = tx.Exec(context.Background(), q, o.Status, o.Accrual, o.Order); err != nil {
+
+			p.logger.LogErr(err, "failed transaction")
+			return err
+		}
+	}
+	return tx.Commit(context.Background())
+}
+
 func (p *PGSStore) hashPassword(pass string) string {
 	h := hmac.New(sha256.New, []byte("password"))
 	h.Write([]byte(pass))
