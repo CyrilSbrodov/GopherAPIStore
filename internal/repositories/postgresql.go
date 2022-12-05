@@ -75,8 +75,8 @@ func (p *PGSStore) Register(u *storage.AcceptUser) error {
 	//хэширование пароля
 	hashPassword := p.hashPassword(u.Password)
 	//добавление пользователя в базу
-	q := `INSERT INTO users (login, hashed_password)
-	   						VALUES ($1, $2)`
+	q := `INSERT INTO users (login, hashed_password, balance_current, balance_withdrawn)
+	   						VALUES ($1, $2, 0, 0)`
 	if _, err := p.client.Exec(context.Background(), q, u.Login, hashPassword); err != nil {
 		p.logger.LogErr(err, "Failure to insert object into table")
 		return err
@@ -202,12 +202,22 @@ func (p *PGSStore) GetBalance(login string) (storage.Balance, error) {
 		return balance, err
 	}
 
-	err = rows.Scan(&balance.Current, &balance.Withdrawn)
-	if err != nil {
-		p.logger.LogErr(err, "Failure to scan object from table")
-		return balance, err
+	for rows.Next() {
+		err = rows.Scan(&balance.Current, &balance.Withdrawn)
+		if err != nil {
+			p.logger.LogErr(err, "Failure to scan object from table")
+			return balance, err
+		}
 	}
 
+	//if err := p.client.QueryRow(context.Background(), q, login).Scan(&balance); err != nil {
+	//	if errors.Is(err, pgx.ErrNoRows) {
+	//		p.logger.LogErr(err, "Failure to select object from table")
+	//		return balance, fmt.Errorf("wrong login %s", login)
+	//	}
+	//	p.logger.LogErr(err, "Wrong login")
+	//	return balance, err
+	//}
 	return balance, nil
 }
 

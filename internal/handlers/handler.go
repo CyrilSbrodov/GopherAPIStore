@@ -338,7 +338,7 @@ func (h *Handler) Balance() http.HandlerFunc {
 			rw.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-
+		//userSession := "Mas"
 		balance, err := h.GetBalance(userSession.login)
 		if err != nil {
 			h.logger.LogErr(err, "")
