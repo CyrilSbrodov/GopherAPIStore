@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -49,7 +49,7 @@ func (h *Handler) Registration() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var u storage.AcceptUser
 
-		content, err := ioutil.ReadAll(r.Body)
+		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			h.logger.LogErr(err, "")
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -108,7 +108,7 @@ func (h *Handler) Login() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		var u storage.AcceptUser
-		content, err := ioutil.ReadAll(r.Body)
+		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			h.logger.LogErr(err, "")
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -197,7 +197,7 @@ func (h *Handler) Orders() http.HandlerFunc {
 
 		order := 0
 
-		content, err := ioutil.ReadAll(r.Body)
+		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			h.logger.LogErr(err, "")
 			rw.WriteHeader(http.StatusInternalServerError)

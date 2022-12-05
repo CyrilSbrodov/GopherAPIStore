@@ -192,14 +192,22 @@ func (p *PGSStore) GetBalance(login string) (storage.Balance, error) {
 	var balance storage.Balance
 	//получение баланса из базы по логину пользователя
 	q := `SELECT balance_current, balance_withdrawn FROM users WHERE login = $1`
-	if err := p.client.QueryRow(context.Background(), q, login).Scan(&balance); err != nil {
+	rows, err := p.client.Query(context.Background(), q, login)
+	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			p.logger.LogErr(err, "Failure to select object from table")
-			return balance, fmt.Errorf("wrong login %s", login)
+			return balance, fmt.Errorf("no balance")
 		}
-		p.logger.LogErr(err, "Wrong login")
+		p.logger.LogErr(err, "")
 		return balance, err
 	}
+
+	err = rows.Scan(&balance.Current, &balance.Withdrawn)
+	if err != nil {
+		p.logger.LogErr(err, "Failure to scan object from table")
+		return balance, err
+	}
+
 	return balance, nil
 }
 

@@ -3,7 +3,7 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -66,7 +66,7 @@ func (a *Agent) GetAccrual(orders []storage.Orders) ([]storage.Orders, error) {
 			a.logger.LogErr(err, "Failed to do request")
 			break
 		}
-		res, err := ioutil.ReadAll(resp.Body)
+		res, err := io.ReadAll(resp.Body)
 		if err != nil {
 			a.logger.LogErr(err, "Failed to read body")
 			break
