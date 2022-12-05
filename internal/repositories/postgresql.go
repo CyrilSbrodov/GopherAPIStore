@@ -46,7 +46,7 @@ func createTable(ctx context.Context, client postgresql.Client, logger *loggers.
 		CREATE TABLE if not exists orders (
     		user_id BIGINT,
     		FOREIGN KEY (user_id) REFERENCES users(id),
-    		orders VARCHAR(200) PRIMARY KEY NOT NULL,
+    		number VARCHAR(200) PRIMARY KEY NOT NULL,
     		status VARCHAR(200),
     		accrual DOUBLE PRECISION,
     		uploaded_at TIMESTAMPTZ(0)
@@ -124,11 +124,11 @@ func (p *PGSStore) CollectOrder(login string, order string) (int, error) {
 	}
 	userIDFromDB := ""
 	//проверка есть ли ордер в базе, если ордер есть, то получаем id того, кто его загрузил
-	q = `SELECT orders.user_id FROM orders WHERE orders.orders = $1`
+	q = `SELECT user_id FROM orders WHERE number = $1`
 	if err := p.client.QueryRow(context.Background(), q, order).Scan(&userIDFromDB); err != nil {
 		//если ордера нет, то заносим его в базу
 		if errors.Is(err, pgx.ErrNoRows) {
-			q = `INSERT INTO orders (user_id, orders, status, accrual, uploaded_at) VALUES ($1, $2, $3, $4, current_timestamp)`
+			q = `INSERT INTO orders (user_id, number, status, accrual, uploaded_at) VALUES ($1, $2, $3, $4, current_timestamp)`
 			if _, err := p.client.Exec(context.Background(), q, id, order, "NEW", 0); err != nil {
 				p.logger.LogErr(err, "Failure to insert object into table")
 				return 500, err
@@ -166,7 +166,7 @@ func (p *PGSStore) GetOrder(login string) (int, []storage.Orders, error) {
 
 	var orders []storage.Orders
 	//получение списка ордеров по id пользователя
-	q = `SELECT orders.orders, status, accrual, uploaded_at FROM orders WHERE orders.user_id = $1`
+	q = `SELECT number, status, accrual, uploaded_at FROM orders WHERE user_id = $1`
 	rows, err := p.client.Query(context.Background(), q, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -225,7 +225,7 @@ func (p *PGSStore) GetBalance(login string) (storage.Balance, error) {
 func (p *PGSStore) GetAllOrders() ([]storage.Orders, error) {
 
 	var orders []storage.Orders
-	q := `SELECT orders.orders FROM orders WHERE status = 'REGISTERED' or status = 'PROCESSING' or status = 'NEW'`
+	q := `SELECT number FROM orders WHERE status = 'REGISTERED' or status = 'PROCESSING' or status = 'NEW'`
 	rows, err := p.client.Query(context.Background(), q)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -255,7 +255,7 @@ func (p *PGSStore) UpdateOrders(orders []storage.Orders) error {
 		return err
 	}
 	defer tx.Rollback(context.Background())
-	q := `UPDATE orders SET status = $1, accrual = $2 WHERE orders.orders = $3`
+	q := `UPDATE orders SET status = $1, accrual = $2 WHERE number = $3`
 	for _, o := range orders {
 		if _, err = tx.Exec(context.Background(), q, o.Status, o.Accrual, o.Order); err != nil {
 
