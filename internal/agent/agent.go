@@ -51,7 +51,7 @@ func (a *Agent) GetAccrual(orders []storage.Orders) ([]storage.Orders, error) {
 	for _, o := range orders {
 		var order storage.Orders
 		orderPath := strconv.Itoa(o.Order)
-		req, err := http.NewRequest(http.MethodGet, "http://"+a.cfg.Accrual+"/api/orders/"+orderPath, nil)
+		req, err := http.NewRequest(http.MethodGet, a.cfg.Accrual+"/api/orders/"+orderPath, nil)
 
 		if err != nil {
 			a.logger.LogErr(err, "Failed to request")
