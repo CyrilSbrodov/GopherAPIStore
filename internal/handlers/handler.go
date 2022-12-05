@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -44,7 +43,6 @@ func (h *Handler) Register(r *chi.Mux) {
 	r.Get("/api/user/balance", h.Balance())
 	r.Post("/api/user/balance/withdraw", h.Withdraw())
 	r.Get("/api/user/withdrawals", h.WithdrawInfo())
-	r.Get("/api/orders/*", h.Accrual())
 }
 
 func (h *Handler) Registration() http.HandlerFunc {
@@ -370,20 +368,5 @@ func (h *Handler) Withdraw() http.HandlerFunc {
 
 func (h *Handler) WithdrawInfo() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-	}
-}
-
-func (h *Handler) Accrual() http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		url := strings.Split(r.URL.Path, "/")
-		fmt.Println(url[3])
-		//req, err := http.NewRequest(http.MethodGet, "http://localhost:8080/orders/"+url[3], nil)
-		req, err := http.Get("http://localhost:8080/orders/2377225624")
-
-		if err != nil {
-			h.logger.LogErr(err, "Failed to request")
-			return
-		}
-		fmt.Println(req)
 	}
 }

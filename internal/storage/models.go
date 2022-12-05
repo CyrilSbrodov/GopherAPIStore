@@ -11,7 +11,7 @@ type User struct {
 }
 
 type Orders struct {
-	UserId     int       `json:"user_id,omitempty"`
+	UserID     int       `json:"user_id,omitempty"`
 	Order      int       `json:"orders"`
 	Status     string    `json:"status"`
 	Accrual    float64   `json:"accrual"`
@@ -24,6 +24,6 @@ type AcceptUser struct {
 }
 
 type Balance struct {
-	current   float64
-	withdrawn float64
+	Current   float64
+	Withdrawn float64
 }

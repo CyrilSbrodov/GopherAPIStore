@@ -21,8 +21,8 @@ type App struct {
 }
 
 func NewApp() *App {
-	srv := http.Server{}
-	return &App{server: srv}
+	srv := &http.Server{}
+	return &App{server: *srv}
 }
 
 func (a *App) Start() {
