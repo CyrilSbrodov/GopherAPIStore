@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -45,7 +46,7 @@ func createTable(ctx context.Context, client postgresql.Client, logger *loggers.
 		CREATE TABLE if not exists orders (
     		user_id BIGINT,
     		FOREIGN KEY (user_id) REFERENCES users(id),
-    		orders BIGINT PRIMARY KEY NOT NULL,
+    		orders VARCHAR(200) PRIMARY KEY NOT NULL,
     		status VARCHAR(200),
     		accrual DOUBLE PRECISION,
     		uploaded_at TIMESTAMPTZ(0)
@@ -105,7 +106,7 @@ func (p *PGSStore) Login(u *storage.AcceptUser) error {
 	return nil
 }
 
-func (p *PGSStore) CollectOrder(login string, order int) (int, error) {
+func (p *PGSStore) CollectOrder(login string, order string) (int, error) {
 	//проверка номера ордера на валидность по алгоритсу Луны
 	if !p.Valid(order) {
 		return 422, fmt.Errorf("wrong orders number %v", order)
@@ -271,8 +272,12 @@ func (p *PGSStore) hashPassword(pass string) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func (p *PGSStore) Valid(order int) bool {
-	return (order%10+checksum(order/10))%10 == 0
+func (p *PGSStore) Valid(order string) bool {
+	number, err := strconv.Atoi(order)
+	if err != nil {
+		return false
+	}
+	return (number%10+checksum(number/10))%10 == 0
 }
 
 func checksum(order int) int {

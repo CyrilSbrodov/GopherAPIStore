@@ -195,23 +195,17 @@ func (h *Handler) Orders() http.HandlerFunc {
 			return
 		}
 
-		order := 0
-
 		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			h.logger.LogErr(err, "")
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
 		defer r.Body.Close()
 
-		if err := json.Unmarshal(content, &order); err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
-		}
-
-		statusCode, err := h.CollectOrder(userSession.login, order)
+		//userSession := "Mas"
+		statusCode, err := h.CollectOrder(userSession.login, string(content))
 		switch statusCode {
 		case http.StatusOK:
 			rw.Header().Set("Content-Type", "application/json")
@@ -277,7 +271,7 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 			rw.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-
+		//userSession := "Mas"
 		statusCode, orders, err := h.GetOrder(userSession.login)
 		switch statusCode {
 		case http.StatusOK:

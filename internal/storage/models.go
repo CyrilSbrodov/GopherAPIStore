@@ -12,10 +12,14 @@ type User struct {
 
 type Orders struct {
 	UserID     int       `json:"user_id,omitempty"`
-	Order      int       `json:"orders"`
+	Order      string    `json:"number"`
 	Status     string    `json:"status"`
 	Accrual    float64   `json:"accrual"`
 	UploadedAt time.Time `json:"uploaded_at"`
+}
+
+type OrdersUpload struct {
+	Order int `json:"order"`
 }
 
 type AcceptUser struct {

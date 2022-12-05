@@ -5,12 +5,10 @@ Content-Type: application/json
   "order": "1214472316"
 }
 ### GET request with a header
-POST http://localhost:8080/api/orders
-Content-Type: application/json
+POST http://localhost:8282/api/user/orders
 
-{
-"order": "7777777777"
-}
+ 7777777777
+
 
 ### GET request with a header
 POST http://localhost:8080/api/orders
