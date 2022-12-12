@@ -49,7 +49,9 @@ func createTable(ctx context.Context, client postgresql.Client, logger *loggers.
     		number VARCHAR(200) PRIMARY KEY NOT NULL,
     		status VARCHAR(200),
     		accrual DOUBLE PRECISION,
-    		uploaded_at TIMESTAMPTZ(0)
+    		sum DOUBLE PRECISION,
+    		uploaded_at TIMESTAMPTZ(0),
+			processed_at TIMESTAMP(0)		                                  
 	);`
 
 	_, err = tx.Exec(ctx, q)
@@ -191,6 +193,7 @@ func (p *PGSStore) GetOrder(login string) (int, []storage.Orders, error) {
 
 func (p *PGSStore) GetBalance(login string) (storage.Balance, error) {
 	var balance storage.Balance
+
 	//получение баланса из базы по логину пользователя
 	q := `SELECT balance_current, balance_withdrawn FROM users WHERE login = $1`
 	rows, err := p.client.Query(context.Background(), q, login)
@@ -225,7 +228,7 @@ func (p *PGSStore) GetBalance(login string) (storage.Balance, error) {
 func (p *PGSStore) GetAllOrders() ([]storage.Orders, error) {
 
 	var orders []storage.Orders
-	q := `SELECT number FROM orders WHERE status = 'REGISTERED' or status = 'PROCESSING' or status = 'NEW'`
+	q := `SELECT user_id, number FROM orders WHERE status = 'REGISTERED' or status = 'PROCESSING' or status = 'NEW'`
 	rows, err := p.client.Query(context.Background(), q)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -238,7 +241,7 @@ func (p *PGSStore) GetAllOrders() ([]storage.Orders, error) {
 	//добавление всех ордеров в слайс
 	for rows.Next() {
 		var order storage.Orders
-		err = rows.Scan(&order.Order)
+		err = rows.Scan(&order.UserID, &order.Order)
 		if err != nil {
 			p.logger.LogErr(err, "Failure to scan object from table")
 			return nil, err
@@ -263,7 +266,24 @@ func (p *PGSStore) UpdateOrders(orders []storage.Orders) error {
 			return err
 		}
 	}
+	//q := `UPDATE orders SET status = $1, accrual = $2 WHERE number = $3`
 	return tx.Commit(context.Background())
+}
+
+func (p *PGSStore) Auth(sessionToken string) (string, error) {
+
+	//handlers.sessions.Mutex.Lock()
+	//defer handlers.sessions.Mutex.Unlock()
+	//userSession, exists := handlers.sessions.sessions[sessionToken]
+	//if !exists {
+	//	return "", fmt.Errorf("unauthorized error")
+	//}
+	//
+	//if userSession.isExpired() {
+	//	delete(handlers.sessions.sessions, sessionToken)
+	//	return "", fmt.Errorf("unauthorized error")
+	//}
+	return "userSession.login", nil
 }
 
 func (p *PGSStore) hashPassword(pass string) string {

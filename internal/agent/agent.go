@@ -85,6 +85,7 @@ func (a *Agent) GetAccrual(orders []storage.Orders) ([]storage.Orders, error) {
 			break
 		}
 		order.Order = o.Order
+		order.UserID = o.UserID
 		updatedOrders = append(updatedOrders, order)
 		resp.Body.Close()
 	}

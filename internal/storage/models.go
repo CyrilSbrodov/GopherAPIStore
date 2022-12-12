@@ -15,6 +15,7 @@ type Orders struct {
 	Order      string    `json:"number"`
 	Status     string    `json:"status"`
 	Accrual    float64   `json:"accrual"`
+	Sum        float64   `json:"sum"`
 	UploadedAt time.Time `json:"uploaded_at"`
 }
 

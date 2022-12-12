@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 
 	"github.com/CyrilSbrodov/GopherAPIStore/cmd/config"
 	"github.com/CyrilSbrodov/GopherAPIStore/cmd/loggers"
@@ -30,7 +31,7 @@ func (a *App) Start() {
 	router := chi.NewRouter()
 	logger := loggers.NewLogger()
 	cfg := config.ServerConfigInit()
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 
 	client, err := postgresql.NewClient(context.Background(), 5, &cfg, logger)
 	checkError(err, logger)
@@ -41,8 +42,9 @@ func (a *App) Start() {
 	accrualAgent := agent.NewAgent(store, *logger, cfg)
 	//запуск агента в отдельной горутине с тикером
 	go accrualAgent.Start(*ticker)
+	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionKey))
 	//определение хендлера
-	handler := handlers.NewHandler(store, logger)
+	handler := handlers.NewHandler(store, logger, sessionStore)
 	//регистрация хендлера
 	handler.Register(router)
 	a.server.Addr = cfg.Addr

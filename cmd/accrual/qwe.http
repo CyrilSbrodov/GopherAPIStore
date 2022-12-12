@@ -26,3 +26,10 @@ Accept: application/json
 GET http://localhost:8080/api/orders/1214472316
 Accept: application/json
 
+### GET request with a header
+POST http://localhost:8282/api/user/orders
+Content-Type: application/json
+
+{
+  "order": "12345678911"
+}

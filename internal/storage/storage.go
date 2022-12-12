@@ -8,4 +8,5 @@ type Storage interface {
 	GetBalance(login string) (Balance, error)
 	GetAllOrders() ([]Orders, error)
 	UpdateOrders([]Orders) error
+	Auth(sessionToken string) (string, error)
 }
