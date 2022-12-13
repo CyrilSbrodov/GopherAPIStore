@@ -280,14 +280,75 @@ func (h *Handler) Balance() http.HandlerFunc {
 
 func (h *Handler) Withdraw() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
+		content, err := io.ReadAll(r.Body)
+		if err != nil {
+			h.logger.LogErr(err, "")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer r.Body.Close()
+		var o storage.Order
+		if err := json.Unmarshal(content, &o); err != nil {
+			h.logger.LogErr(err, "")
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
 		userSession := r.Context().Value(ctxKeyUser).(string)
-		fmt.Println(userSession)
+		statusCode, err := h.Storage.Withdraw(userSession, &o)
+		switch statusCode {
+		case http.StatusOK:
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusOK)
+			return
+		case http.StatusPaymentRequired:
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusPaymentRequired)
+			rw.Write([]byte(err.Error()))
+			return
+		case http.StatusInternalServerError:
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		case http.StatusUnprocessableEntity:
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusUnprocessableEntity)
+			rw.Write([]byte(err.Error()))
+			return
+		}
 	}
 }
 
 func (h *Handler) WithdrawInfo() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		userSession := r.Context().Value(ctxKeyUser).(string)
+		statusCode, withdrawals, err := h.Withdrawals(userSession)
+		switch statusCode {
+		case http.StatusOK:
+			result, err := json.Marshal(withdrawals)
+			if err != nil {
+				h.logger.LogErr(err, "failed to marshal")
+				rw.Header().Set("Content-Type", "application/json")
+				rw.WriteHeader(http.StatusInternalServerError)
+				rw.Write([]byte(err.Error()))
+				return
+			}
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusOK)
+			rw.Write(result)
+			return
+		case http.StatusNoContent:
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusNoContent)
+			rw.Write([]byte(err.Error()))
+			return
+		case http.StatusInternalServerError:
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
 	}
 }
 

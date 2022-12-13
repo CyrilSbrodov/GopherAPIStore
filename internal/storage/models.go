@@ -19,8 +19,10 @@ type Orders struct {
 	UploadedAt time.Time `json:"uploaded_at"`
 }
 
-type OrdersUpload struct {
-	Order int `json:"order"`
+type Order struct {
+	Order       string    `json:"order"`
+	Sum         float64   `json:"sum"`
+	ProcessedAt time.Time `json:"processed_at"`
 }
 
 type AcceptUser struct {

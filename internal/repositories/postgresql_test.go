@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 
 func TestPGSStore_Register(t *testing.T) {
 	s, teardown := TestPGStore(t, CFG)
-	defer teardown("users", "orders")
+	defer teardown("users", "orders", "balance_withdrawn")
 
 	err := s.Register(&storage.AcceptUser{
 		Login:    "test",
@@ -33,7 +33,7 @@ func TestPGSStore_Register(t *testing.T) {
 
 func TestPGSStore_CollectOrder(t *testing.T) {
 	s, teardown := TestPGStore(t, CFG)
-	defer teardown("users", "orders")
+	defer teardown("users", "orders", "balance_withdrawn")
 
 	login := "test"
 	order := "12345678903"
@@ -51,7 +51,7 @@ func TestPGSStore_CollectOrder(t *testing.T) {
 
 func TestPGSStore_Login(t *testing.T) {
 	s, teardown := TestPGStore(t, CFG)
-	defer teardown("users", "orders")
+	defer teardown("users", "orders", "balance_withdrawn")
 	var u = storage.AcceptUser{
 		Login:    "test",
 		Password: "123456",
@@ -66,7 +66,7 @@ func TestPGSStore_Login(t *testing.T) {
 
 func TestStoreGopher_GetOrder(t *testing.T) {
 	s, teardown := TestPGStore(t, CFG)
-	defer teardown("users", "orders")
+	defer teardown("users", "orders", "balance_withdrawn")
 	var u = storage.AcceptUser{
 		Login:    "test",
 		Password: "123456",
@@ -94,7 +94,7 @@ func TestStoreGopher_GetOrder(t *testing.T) {
 
 func TestPGSStore_GetAllOrders(t *testing.T) {
 	s, teardown := TestPGStore(t, CFG)
-	defer teardown("users", "orders")
+	defer teardown("users", "orders", "balance_withdrawn")
 	var u = storage.AcceptUser{
 		Login:    "test",
 		Password: "123456",
@@ -124,7 +124,7 @@ func TestPGSStore_GetAllOrders(t *testing.T) {
 
 func TestPGSStore_GetBalance(t *testing.T) {
 	s, teardown := TestPGStore(t, CFG)
-	defer teardown("users", "orders")
+	defer teardown("users", "orders", "balance_withdrawn")
 	var u = storage.AcceptUser{
 		Login:    "test",
 		Password: "123456",
@@ -163,7 +163,7 @@ func TestPGSStore_GetBalance(t *testing.T) {
 
 func TestPGSStore_UpdateOrders(t *testing.T) {
 	s, teardown := TestPGStore(t, CFG)
-	defer teardown("users", "orders")
+	defer teardown("users", "orders", "balance_withdrawn")
 
 	var u = storage.AcceptUser{
 		Login:    "test",
@@ -194,7 +194,7 @@ func TestPGSStore_UpdateOrders(t *testing.T) {
 
 func TestPGSStore_Valid(t *testing.T) {
 	s, teardown := TestPGStore(t, CFG)
-	defer teardown("users", "orders")
+	defer teardown("users", "orders", "balance_withdrawn")
 	tests := []struct {
 		name           string
 		order          string
@@ -215,4 +215,35 @@ func TestPGSStore_Valid(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, s.Valid(tt.order))
 		})
 	}
+}
+
+func TestPGSStore_UpdateUserBalance(t *testing.T) {
+	s, teardown := TestPGStore(t, CFG)
+	defer teardown("users", "orders", "balance_withdrawn")
+
+	var u = storage.AcceptUser{
+		Login:    "test",
+		Password: "123456",
+	}
+	order := "12345678903"
+
+	err := s.Register(&u)
+	assert.NoError(t, err)
+
+	statusCode, err := s.CollectOrder(u.Login, order)
+	assert.NoError(t, err)
+	assert.NotNil(t, statusCode)
+
+	var newOrders = []storage.Orders{
+		{
+			UserID:  0,
+			Order:   "12345678903",
+			Status:  "PROCESSED",
+			Accrual: 500,
+			Sum:     0,
+		},
+	}
+
+	err = s.UpdateUserBalance(newOrders)
+	assert.NoError(t, err)
 }

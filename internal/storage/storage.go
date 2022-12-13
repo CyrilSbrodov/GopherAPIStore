@@ -8,4 +8,7 @@ type Storage interface {
 	GetBalance(login string) (*Balance, error)
 	GetAllOrders() ([]Orders, error)
 	UpdateOrders([]Orders) error
+	UpdateUserBalance([]Orders) error
+	Withdraw(login string, order *Order) (int, error)
+	Withdrawals(login string) (int, []Order, error)
 }

@@ -45,12 +45,17 @@ func createTable(ctx context.Context, client postgresql.Client, logger *loggers.
     		user_id BIGINT,
     		FOREIGN KEY (user_id) REFERENCES users(id),
     		number VARCHAR(200) PRIMARY KEY NOT NULL,
-    		status VARCHAR(200),
+    		status VARCHAR(200) NOT NULL,
     		accrual DOUBLE PRECISION,
-    		sum DOUBLE PRECISION,
-    		uploaded_at TIMESTAMPTZ(0),
-			processed_at TIMESTAMP(0)		                                  
-	);`
+    		uploaded_at TIMESTAMPTZ(0) NOT NULL                             
+		);
+		CREATE TABLE if not exists balance_withdrawn (
+    		user_id BIGINT,
+    		FOREIGN KEY (user_id) REFERENCES users(id),
+    		orders VARCHAR(200) PRIMARY KEY NOT NULL,
+    		sum DOUBLE PRECISION NOT NULL,
+			processed_at TIMESTAMP(0) NOT NULL		                                  
+		);`
 
 	_, err = tx.Exec(ctx, q)
 	if err != nil {
@@ -249,6 +254,103 @@ func (p *PGSStore) UpdateOrders(orders []storage.Orders) error {
 	}
 	//q := `UPDATE orders SET status = $1, accrual = $2 WHERE number = $3`
 	return tx.Commit(context.Background())
+}
+
+func (p *PGSStore) UpdateUserBalance(orders []storage.Orders) error {
+	ordersMap := make(map[int]float64)
+	for _, o := range orders {
+		ordersMap[o.UserID] = o.Accrual
+	}
+	tx, err := p.client.BeginTx(context.Background(), pgx.TxOptions{})
+	if err != nil {
+		p.logger.LogErr(err, "failed to begin transaction")
+		return err
+	}
+	defer tx.Rollback(context.Background())
+	q := `UPDATE users SET balance_current = $1 WHERE id = $2`
+	for i, o := range ordersMap {
+		if _, err = tx.Exec(context.Background(), q, o, i); err != nil {
+
+			p.logger.LogErr(err, "failed transaction")
+			return err
+		}
+	}
+
+	return tx.Commit(context.Background())
+}
+
+func (p *PGSStore) Withdraw(login string, order *storage.Order) (int, error) {
+	//проверка номера ордера на валидность по алгоритсу Луны
+	if !p.Valid(order.Order) {
+		return 422, fmt.Errorf("wrong orders number %v", order.Order)
+	}
+	var u storage.User
+	q := `SELECT id, balance_current, balance_withdrawn FROM users WHERE login = $1`
+	if err := p.client.QueryRow(context.Background(), q, login).Scan(&u.ID, &u.Accrual.Current, &u.Accrual.Withdrawn); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			p.logger.LogErr(err, "Failure to select object from table")
+			return 500, fmt.Errorf("no user")
+		}
+		p.logger.LogErr(err, "Failure to select object from table")
+		return 500, err
+	}
+
+	if order.Sum > u.Accrual.Current {
+		return 402, fmt.Errorf("insufficient funds")
+	} else {
+		u.Accrual.Current -= order.Sum
+		u.Accrual.Withdrawn += order.Sum
+	}
+
+	q = `INSERT INTO balance_withdrawn (user_id, orders, sum, processed_at) VALUES ($1, $2, $3, current_timestamp)`
+	if _, err := p.client.Exec(context.Background(), q, u.ID, order.Order, order.Sum); err != nil {
+		p.logger.LogErr(err, "Failure to insert object into table")
+		return 500, err
+	}
+	q = `UPDATE users SET balance_current = $1, balance_withdrawn = $2 WHERE id = $3`
+	if _, err := p.client.Exec(context.Background(), q, u.Accrual.Current, u.Accrual.Withdrawn, u.ID); err != nil {
+		p.logger.LogErr(err, "Failure to insert object into table")
+		return 500, err
+	}
+	return 200, nil
+}
+
+func (p *PGSStore) Withdrawals(login string) (int, []storage.Order, error) {
+	id := ""
+	//поиск id пользователя по логину
+	q := `SELECT users.id FROM users WHERE login = $1`
+	if err := p.client.QueryRow(context.Background(), q, login).Scan(&id); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			p.logger.LogErr(err, "Failure to select object from table")
+			return 204, nil, fmt.Errorf("wrong login %s", login)
+		}
+		p.logger.LogErr(err, "")
+		return 500, nil, err
+	}
+
+	var orders []storage.Order
+	//получение списка ордеров по id пользователя
+	q = `SELECT orders, sum, processed_at FROM balance_withdrawn WHERE user_id = $1`
+	rows, err := p.client.Query(context.Background(), q, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			p.logger.LogErr(err, "Failure to select object from table")
+			return 204, nil, fmt.Errorf("no one withdraw")
+		}
+		p.logger.LogErr(err, "")
+		return 500, nil, err
+	}
+	//добавление всех ордеров в слайс
+	for rows.Next() {
+		var order storage.Order
+		err = rows.Scan(&order.Order, &order.Sum, &order.ProcessedAt)
+		if err != nil {
+			p.logger.LogErr(err, "Failure to scan object from table")
+			return 500, nil, err
+		}
+		orders = append(orders, order)
+	}
+	return 200, orders, nil
 }
 
 func (p *PGSStore) hashPassword(pass string) string {

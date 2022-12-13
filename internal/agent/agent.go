@@ -45,7 +45,10 @@ func (a *Agent) Start(ticker time.Ticker) {
 		if err != nil {
 			a.logger.LogErr(err, "")
 		}
-		if err := a.Storage.UpdateOrders(updatedOrders); err != nil {
+		if err = a.Storage.UpdateOrders(updatedOrders); err != nil {
+			a.logger.LogErr(err, "")
+		}
+		if err = a.Storage.UpdateUserBalance(updatedOrders); err != nil {
 			a.logger.LogErr(err, "")
 		}
 	}
