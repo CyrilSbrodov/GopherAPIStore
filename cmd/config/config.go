@@ -12,7 +12,7 @@ type ServerConfig struct {
 	Addr        string `env:"RUN_ADDRESS"`
 	Accrual     string `env:"ACCRUAL_SYSTEM_ADDRESS"`
 	DatabaseURI string `env:"DATABASE_URI"`
-	SessionKey  string `evv:"SESSION_KEY"`
+	SessionKey  string `env:"SESSION_KEY"`
 }
 
 var cfgSrv ServerConfig

@@ -80,12 +80,12 @@ func (mr *MockStorageMockRecorder) GetAllOrders() *gomock.Call {
 }
 
 // GetBalance mocks base method.
-func (m *MockStorage) GetBalance(arg0 string) (storage.Balance, error) {
+func (m *MockStorage) GetBalance(arg0 string) (*storage.Balance, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBalance", arg0)
 	ret0, _ := ret[0].(storage.Balance)
 	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return &ret0, ret1
 }
 
 // GetBalance indicates an expected call of GetBalance.

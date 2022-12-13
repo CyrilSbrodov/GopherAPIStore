@@ -171,36 +171,6 @@ func (h *Handler) Login() http.HandlerFunc {
 func (h *Handler) Orders() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		//c, err := r.Cookie("session_token")
-		//if err != nil {
-		//	if errors.Is(err, http.ErrNoCookie) {
-		//		// If the cookie is not set, return an unauthorized status
-		//		rw.WriteHeader(http.StatusUnauthorized)
-		//		return
-		//	}
-		//	// For any other type of error, return a bad request status
-		//	rw.WriteHeader(http.StatusBadRequest)
-		//	return
-		//}
-		//sessionToken := c.Value
-		//
-		//// We then get the session from our session map
-		//sessions.Mutex.Lock()
-		//defer sessions.Mutex.Unlock()
-		//userSession, exists := sessions.sessions[sessionToken]
-		//if !exists {
-		//	// If the session token is not present in session map, return an unauthorized error
-		//	rw.WriteHeader(http.StatusUnauthorized)
-		//	return
-		//}
-		//// If the session is present, but has expired, we can delete the session, and return
-		//// an unauthorized status
-		//if userSession.isExpired() {
-		//	delete(sessions.sessions, sessionToken)
-		//	rw.WriteHeader(http.StatusUnauthorized)
-		//	return
-		//}
-
 		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			h.logger.LogErr(err, "")
@@ -249,35 +219,7 @@ func (h *Handler) Orders() http.HandlerFunc {
 
 func (h *Handler) GetOrders() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		//c, err := r.Cookie("session_token")
-		//if err != nil {
-		//	if errors.Is(err, http.ErrNoCookie) {
-		//		// If the cookie is not set, return an unauthorized status
-		//		rw.WriteHeader(http.StatusUnauthorized)
-		//		return
-		//	}
-		//	// For any other type of error, return a bad request status
-		//	rw.WriteHeader(http.StatusBadRequest)
-		//	return
-		//}
-		//sessionToken := c.Value
-		//
-		//// We then get the session from our session map
-		//sessions.Mutex.Lock()
-		//defer sessions.Mutex.Unlock()
-		//userSession, exists := sessions.sessions[sessionToken]
-		//if !exists {
-		//	// If the session token is not present in session map, return an unauthorized error
-		//	rw.WriteHeader(http.StatusUnauthorized)
-		//	return
-		//}
-		//// If the session is present, but has expired, we can delete the session, and return
-		//// an unauthorized status
-		//if userSession.isExpired() {
-		//	delete(sessions.sessions, sessionToken)
-		//	rw.WriteHeader(http.StatusUnauthorized)
-		//	return
-		//}
+
 		//userSession := "Mas"
 		userSession := r.Context().Value(ctxKeyUser).(string)
 		statusCode, orders, err := h.GetOrder(userSession)
@@ -311,35 +253,7 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 
 func (h *Handler) Balance() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		//c, err := r.Cookie("session_token")
-		//if err != nil {
-		//	if errors.Is(err, http.ErrNoCookie) {
-		//		// If the cookie is not set, return an unauthorized status
-		//		rw.WriteHeader(http.StatusUnauthorized)
-		//		return
-		//	}
-		//	// For any other type of error, return a bad request status
-		//	rw.WriteHeader(http.StatusBadRequest)
-		//	return
-		//}
-		//sessionToken := c.Value
-		//
-		//// We then get the session from our session map
-		//sessions.Mutex.Lock()
-		//defer sessions.Mutex.Unlock()
-		//userSession, exists := sessions.sessions[sessionToken]
-		//if !exists {
-		//	// If the session token is not present in session map, return an unauthorized error
-		//	rw.WriteHeader(http.StatusUnauthorized)
-		//	return
-		//}
-		//// If the session is present, but has expired, we can delete the session, and return
-		//// an unauthorized status
-		//if userSession.isExpired() {
-		//	delete(sessions.sessions, sessionToken)
-		//	rw.WriteHeader(http.StatusUnauthorized)
-		//	return
-		//}
+
 		//userSession := "Mas"
 		userSession := r.Context().Value(ctxKeyUser).(string)
 		balance, err := h.GetBalance(userSession)
@@ -366,35 +280,7 @@ func (h *Handler) Balance() http.HandlerFunc {
 
 func (h *Handler) Withdraw() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		//c, err := r.Cookie("session_token")
-		//if err != nil {
-		//	if errors.Is(err, http.ErrNoCookie) {
-		//		// If the cookie is not set, return an unauthorized status
-		//		rw.WriteHeader(http.StatusUnauthorized)
-		//		return
-		//	}
-		//	// For any other type of error, return a bad request status
-		//	rw.WriteHeader(http.StatusBadRequest)
-		//	return
-		//}
-		//sessionToken := c.Value
-		//
-		//// We then get the session from our session map
-		//sessions.Mutex.Lock()
-		//defer sessions.Mutex.Unlock()
-		//userSession, exists := sessions.sessions[sessionToken]
-		//if !exists {
-		//	// If the session token is not present in session map, return an unauthorized error
-		//	rw.WriteHeader(http.StatusUnauthorized)
-		//	return
-		//}
-		//// If the session is present, but has expired, we can delete the session, and return
-		//// an unauthorized status
-		//if userSession.isExpired() {
-		//	delete(sessions.sessions, sessionToken)
-		//	rw.WriteHeader(http.StatusUnauthorized)
-		//	return
-		//}
+
 		userSession := r.Context().Value(ctxKeyUser).(string)
 		fmt.Println(userSession)
 	}

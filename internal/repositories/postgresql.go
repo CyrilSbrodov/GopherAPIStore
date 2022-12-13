@@ -16,8 +16,6 @@ import (
 	"github.com/CyrilSbrodov/GopherAPIStore/cmd/config"
 	"github.com/CyrilSbrodov/GopherAPIStore/cmd/loggers"
 	"github.com/CyrilSbrodov/GopherAPIStore/internal/storage"
-
-	//"github.com/CyrilSbrodov/GopherAPIStore/internal/storage"
 	"github.com/CyrilSbrodov/GopherAPIStore/pkg/client/postgresql"
 )
 
@@ -191,38 +189,21 @@ func (p *PGSStore) GetOrder(login string) (int, []storage.Orders, error) {
 	return 200, orders, nil
 }
 
-func (p *PGSStore) GetBalance(login string) (storage.Balance, error) {
+func (p *PGSStore) GetBalance(login string) (*storage.Balance, error) {
 	var balance storage.Balance
 
 	//получение баланса из базы по логину пользователя
 	q := `SELECT balance_current, balance_withdrawn FROM users WHERE login = $1`
-	rows, err := p.client.Query(context.Background(), q, login)
-	if err != nil {
+	if err := p.client.QueryRow(context.Background(), q, login).Scan(&balance.Current, &balance.Withdrawn); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			p.logger.LogErr(err, "Failure to select object from table")
-			return balance, fmt.Errorf("no balance")
+			return nil, fmt.Errorf("no balance")
 		}
 		p.logger.LogErr(err, "")
-		return balance, err
+		return nil, err
 	}
 
-	for rows.Next() {
-		err = rows.Scan(&balance.Current, &balance.Withdrawn)
-		if err != nil {
-			p.logger.LogErr(err, "Failure to scan object from table")
-			return balance, err
-		}
-	}
-
-	//if err := p.client.QueryRow(context.Background(), q, login).Scan(&balance); err != nil {
-	//	if errors.Is(err, pgx.ErrNoRows) {
-	//		p.logger.LogErr(err, "Failure to select object from table")
-	//		return balance, fmt.Errorf("wrong login %s", login)
-	//	}
-	//	p.logger.LogErr(err, "Wrong login")
-	//	return balance, err
-	//}
-	return balance, nil
+	return &balance, nil
 }
 
 func (p *PGSStore) GetAllOrders() ([]storage.Orders, error) {
@@ -268,22 +249,6 @@ func (p *PGSStore) UpdateOrders(orders []storage.Orders) error {
 	}
 	//q := `UPDATE orders SET status = $1, accrual = $2 WHERE number = $3`
 	return tx.Commit(context.Background())
-}
-
-func (p *PGSStore) Auth(sessionToken string) (string, error) {
-
-	//handlers.sessions.Mutex.Lock()
-	//defer handlers.sessions.Mutex.Unlock()
-	//userSession, exists := handlers.sessions.sessions[sessionToken]
-	//if !exists {
-	//	return "", fmt.Errorf("unauthorized error")
-	//}
-	//
-	//if userSession.isExpired() {
-	//	delete(handlers.sessions.sessions, sessionToken)
-	//	return "", fmt.Errorf("unauthorized error")
-	//}
-	return "userSession.login", nil
 }
 
 func (p *PGSStore) hashPassword(pass string) string {
