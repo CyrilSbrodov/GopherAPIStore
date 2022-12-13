@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
@@ -439,52 +439,182 @@ func TestHandler_Orders(t *testing.T) {
 }
 
 func TestHandler_Withdraw(t *testing.T) {
-	type fields struct {
-		Storage storage.Storage
-		logger  loggers.Logger
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   http.HandlerFunc
+		name         string
+		cookieValue  map[interface{}]interface{}
+		body         storage.Order
+		statusCode   int
+		errFromDB    error
+		expectedCode int
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Test 200",
+			cookieValue: map[interface{}]interface{}{
+				"user_id": "test",
+			},
+			body: storage.Order{
+				Order: "2377225624",
+				Sum:   500,
+			},
+			errFromDB:    nil,
+			statusCode:   http.StatusOK,
+			expectedCode: http.StatusOK,
+		},
+		{
+			name: "Test 422",
+			cookieValue: map[interface{}]interface{}{
+				"user_id": "test",
+			},
+			body: storage.Order{
+				Order: "23",
+				Sum:   500,
+			},
+			errFromDB:    errors.New("err"),
+			statusCode:   http.StatusUnprocessableEntity,
+			expectedCode: http.StatusUnprocessableEntity,
+		},
+		{
+			name:        "Test 401",
+			cookieValue: nil,
+			body: storage.Order{
+				Order: "2377225624",
+				Sum:   500,
+			},
+			errFromDB:    errors.New("err"),
+			statusCode:   http.StatusUnauthorized,
+			expectedCode: http.StatusUnauthorized,
+		},
+		{
+			name: "Test 402",
+			cookieValue: map[interface{}]interface{}{
+				"user_id": "test",
+			},
+			body: storage.Order{
+				Order: "2377225624",
+				Sum:   500,
+			},
+			errFromDB:    errors.New("err"),
+			statusCode:   http.StatusPaymentRequired,
+			expectedCode: http.StatusPaymentRequired,
+		},
+		{
+			name: "Test 500",
+			cookieValue: map[interface{}]interface{}{
+				"user_id": "test",
+			},
+			body: storage.Order{
+				Order: "2377225624",
+				Sum:   500,
+			},
+			errFromDB:    errors.New("err"),
+			statusCode:   http.StatusInternalServerError,
+			expectedCode: http.StatusInternalServerError,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := &Handler{
-				Storage: tt.fields.Storage,
-				logger:  tt.fields.logger,
-			}
-			if got := h.Withdraw(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Withdraw() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestHandler_WithdrawInfo(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	s := mocks.NewMockStorage(ctrl)
-	logger := loggers.NewLogger()
-
-	tests := []struct {
-		name string
-		want http.HandlerFunc
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+			sc := securecookie.New([]byte("secret"), nil)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			s := mocks.NewMockStorage(ctrl)
+			logger := loggers.NewLogger()
+			bodyJSON, err := json.Marshal(tt.body)
+			assert.NoError(t, err)
+			rec := httptest.NewRecorder()
+			req, _ := http.NewRequest(http.MethodPost, "/api/user/balance/withdraw", bytes.NewBuffer(bodyJSON))
+			cookieStr, _ := sc.Encode(sessionName, tt.cookieValue)
+			req.Header.Set("Cookie", fmt.Sprintf("%s=%s", sessionName, cookieStr))
 			h := &Handler{
 				Storage:      s,
 				logger:       *logger,
 				sessionStore: sessions.NewCookieStore([]byte("secret")),
 			}
-			if got := h.WithdrawInfo(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithdrawInfo() = %v, want %v", got, tt.want)
+
+			s.EXPECT().Withdraw(gomock.Any(), gomock.Any()).Return(tt.statusCode, tt.errFromDB).AnyTimes()
+			h.Auth(h.Withdraw()).ServeHTTP(rec, req)
+
+			assert.Equal(t, tt.expectedCode, rec.Code)
+		})
+	}
+}
+
+func TestHandler_WithdrawInfo(t *testing.T) {
+	tests := []struct {
+		name         string
+		cookieValue  map[interface{}]interface{}
+		answer       []storage.Order
+		statusCode   int
+		errFromDB    error
+		expectedCode int
+	}{
+		{
+			name: "Test 200",
+			cookieValue: map[interface{}]interface{}{
+				"user_id": "test",
+			},
+			answer: []storage.Order{
+				{
+					Order:       "12345678903",
+					Sum:         500,
+					ProcessedAt: time.Now(),
+				},
+			},
+			errFromDB:    nil,
+			statusCode:   http.StatusOK,
+			expectedCode: http.StatusOK,
+		},
+		{
+			name: "Test 204",
+			cookieValue: map[interface{}]interface{}{
+				"user_id": "test",
+			},
+			answer:       nil,
+			errFromDB:    errors.New("err"),
+			statusCode:   http.StatusNoContent,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "Test 401",
+			cookieValue:  nil,
+			answer:       nil,
+			errFromDB:    errors.New("err"),
+			statusCode:   http.StatusUnauthorized,
+			expectedCode: http.StatusUnauthorized,
+		},
+		{
+			name: "Test 500",
+			cookieValue: map[interface{}]interface{}{
+				"user_id": "test",
+			},
+			answer:       nil,
+			errFromDB:    errors.New("err"),
+			statusCode:   http.StatusInternalServerError,
+			expectedCode: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sc := securecookie.New([]byte("secret"), nil)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			s := mocks.NewMockStorage(ctrl)
+			logger := loggers.NewLogger()
+			rec := httptest.NewRecorder()
+			req, _ := http.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
+			cookieStr, _ := sc.Encode(sessionName, tt.cookieValue)
+			req.Header.Set("Cookie", fmt.Sprintf("%s=%s", sessionName, cookieStr))
+			h := &Handler{
+				Storage:      s,
+				logger:       *logger,
+				sessionStore: sessions.NewCookieStore([]byte("secret")),
 			}
+
+			s.EXPECT().Withdrawals(gomock.Any()).Return(tt.statusCode, tt.answer, tt.errFromDB).AnyTimes()
+			h.Auth(h.WithdrawInfo()).ServeHTTP(rec, req)
+
+			assert.Equal(t, tt.expectedCode, rec.Code)
 		})
 	}
 }
