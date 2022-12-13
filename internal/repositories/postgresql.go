@@ -214,6 +214,7 @@ func (p *PGSStore) GetBalance(login string) (*storage.Balance, error) {
 func (p *PGSStore) GetAllOrders() ([]storage.Orders, error) {
 
 	var orders []storage.Orders
+	//получение всех ордеров с нужным статусом
 	q := `SELECT user_id, number FROM orders WHERE status = 'REGISTERED' or status = 'PROCESSING' or status = 'NEW'`
 	rows, err := p.client.Query(context.Background(), q)
 	if err != nil {
@@ -244,6 +245,7 @@ func (p *PGSStore) UpdateOrders(orders []storage.Orders) error {
 		return err
 	}
 	defer tx.Rollback(context.Background())
+	//обновление заказов пользователей
 	q := `UPDATE orders SET status = $1, accrual = $2 WHERE number = $3`
 	for _, o := range orders {
 		if _, err = tx.Exec(context.Background(), q, o.Status, o.Accrual, o.Order); err != nil {
@@ -252,11 +254,11 @@ func (p *PGSStore) UpdateOrders(orders []storage.Orders) error {
 			return err
 		}
 	}
-	//q := `UPDATE orders SET status = $1, accrual = $2 WHERE number = $3`
 	return tx.Commit(context.Background())
 }
 
 func (p *PGSStore) UpdateUserBalance(orders []storage.Orders) error {
+	//суммирование всех вознаграждений от заказов пользователя
 	ordersMap := make(map[int]float64)
 	for _, o := range orders {
 		ordersMap[o.UserID] = o.Accrual
@@ -267,6 +269,7 @@ func (p *PGSStore) UpdateUserBalance(orders []storage.Orders) error {
 		return err
 	}
 	defer tx.Rollback(context.Background())
+	//обновление баланса пользователей
 	q := `UPDATE users SET balance_current = $1 WHERE id = $2`
 	for i, o := range ordersMap {
 		if _, err = tx.Exec(context.Background(), q, o, i); err != nil {
@@ -280,11 +283,12 @@ func (p *PGSStore) UpdateUserBalance(orders []storage.Orders) error {
 }
 
 func (p *PGSStore) Withdraw(login string, order *storage.Order) (int, error) {
-	//проверка номера ордера на валидность по алгоритсу Луны
+	//проверка номера ордера на валидность по алгоритму Луны
 	if !p.Valid(order.Order) {
 		return 422, fmt.Errorf("wrong orders number %v", order.Order)
 	}
 	var u storage.User
+	//получение пользователя с балансом и id
 	q := `SELECT id, balance_current, balance_withdrawn FROM users WHERE login = $1`
 	if err := p.client.QueryRow(context.Background(), q, login).Scan(&u.ID, &u.Accrual.Current, &u.Accrual.Withdrawn); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -294,19 +298,21 @@ func (p *PGSStore) Withdraw(login string, order *storage.Order) (int, error) {
 		p.logger.LogErr(err, "Failure to select object from table")
 		return 500, err
 	}
-
+	//проверка, что суммы хватает на оплату заказа
 	if order.Sum > u.Accrual.Current {
+		//если суммы не хватает, то возвращаем 402 — на счету недостаточно средств
 		return 402, fmt.Errorf("insufficient funds")
 	} else {
 		u.Accrual.Current -= order.Sum
 		u.Accrual.Withdrawn += order.Sum
 	}
-
+	//обновление таблицы списаний
 	q = `INSERT INTO balance_withdrawn (user_id, orders, sum, processed_at) VALUES ($1, $2, $3, current_timestamp)`
 	if _, err := p.client.Exec(context.Background(), q, u.ID, order.Order, order.Sum); err != nil {
 		p.logger.LogErr(err, "Failure to insert object into table")
 		return 500, err
 	}
+	//обновление пользователя с новым балансом
 	q = `UPDATE users SET balance_current = $1, balance_withdrawn = $2 WHERE id = $3`
 	if _, err := p.client.Exec(context.Background(), q, u.Accrual.Current, u.Accrual.Withdrawn, u.ID); err != nil {
 		p.logger.LogErr(err, "Failure to insert object into table")
@@ -329,7 +335,7 @@ func (p *PGSStore) Withdrawals(login string) (int, []storage.Order, error) {
 	}
 
 	var orders []storage.Order
-	//получение списка ордеров по id пользователя
+	//получение спискок выводов средств по id пользователя
 	q = `SELECT orders, sum, processed_at FROM balance_withdrawn WHERE user_id = $1`
 	rows, err := p.client.Query(context.Background(), q, id)
 	if err != nil {
@@ -340,7 +346,7 @@ func (p *PGSStore) Withdrawals(login string) (int, []storage.Order, error) {
 		p.logger.LogErr(err, "")
 		return 500, nil, err
 	}
-	//добавление всех ордеров в слайс
+	//добавление всех выводов средств в слайс
 	for rows.Next() {
 		var order storage.Order
 		err = rows.Scan(&order.Order, &order.Sum, &order.ProcessedAt)

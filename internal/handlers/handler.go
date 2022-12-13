@@ -180,7 +180,6 @@ func (h *Handler) Orders() http.HandlerFunc {
 
 		defer r.Body.Close()
 
-		//userSession := "Mas"
 		userSession := r.Context().Value(ctxKeyUser).(string)
 		statusCode, err := h.CollectOrder(userSession, string(content))
 		switch statusCode {
@@ -220,7 +219,6 @@ func (h *Handler) Orders() http.HandlerFunc {
 func (h *Handler) GetOrders() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		//userSession := "Mas"
 		userSession := r.Context().Value(ctxKeyUser).(string)
 		statusCode, orders, err := h.GetOrder(userSession)
 		switch statusCode {
@@ -254,7 +252,6 @@ func (h *Handler) GetOrders() http.HandlerFunc {
 func (h *Handler) Balance() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		//userSession := "Mas"
 		userSession := r.Context().Value(ctxKeyUser).(string)
 		balance, err := h.GetBalance(userSession)
 		if err != nil {

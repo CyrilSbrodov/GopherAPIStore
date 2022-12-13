@@ -22,8 +22,6 @@ func ServerConfigInit() ServerConfig {
 	flag.StringVar(&cfgSrv.Accrual, "r", "localhost:8080", "ACCRUAL_SYSTEM_ADDRESS")
 	flag.StringVar(&cfgSrv.SessionKey, "k", "secret", "session key")
 	flag.StringVar(&cfgSrv.DatabaseURI, "d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "DATABASE_URI")
-	//"postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
-	//"postgresql://postgres:postgres@postgres/praktikum?sslmode=disable" - tests
 	flag.Parse()
 	if err := env.Parse(&cfgSrv); err != nil {
 		fmt.Println(err)

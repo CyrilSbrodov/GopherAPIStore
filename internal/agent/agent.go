@@ -30,24 +30,31 @@ func NewAgent(storage storage.Storage, logger loggers.Logger, cfg config.ServerC
 }
 
 func (a *Agent) Start(ticker time.Ticker) {
+	//запуск агента в бесконечном цикле
 	for range ticker.C {
+		//получение всех заказов с нужным статусом
 		orders, err := a.Storage.GetAllOrders()
 		if err != nil {
 			a.logger.LogErr(err, "")
 		}
+		//если новых заказов нет, то ждем опять тикер
 		if orders == nil {
 			continue
 		}
+		//обновление заказов во внешней системе
 		if err = a.UploadOrders(orders); err != nil {
 			a.logger.LogErr(err, "")
 		}
+		//получение списка обновленных ореров из внешней системы
 		updatedOrders, err := a.GetAccrual(orders)
 		if err != nil {
 			a.logger.LogErr(err, "")
 		}
+		//обновление заказов в таблице ореров
 		if err = a.Storage.UpdateOrders(updatedOrders); err != nil {
 			a.logger.LogErr(err, "")
 		}
+		//обновление суммы вознаграждения в таблице пользователей
 		if err = a.Storage.UpdateUserBalance(updatedOrders); err != nil {
 			a.logger.LogErr(err, "")
 		}

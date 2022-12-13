@@ -32,6 +32,7 @@ func (a *App) Start() {
 	cfg := config.ServerConfigInit()
 	ticker := time.NewTicker(5 * time.Second)
 
+	//определение клиента
 	client, err := postgresql.NewClient(context.Background(), 5, &cfg, logger)
 	checkError(err, logger)
 	//определение БД
@@ -41,6 +42,7 @@ func (a *App) Start() {
 	accrualAgent := agent.NewAgent(store, *logger, cfg)
 	//запуск агента в отдельной горутине с тикером
 	go accrualAgent.Start(*ticker)
+	//определение куки-хранилища
 	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionKey))
 	//определение хендлера
 	handler := handlers.NewHandler(store, logger, sessionStore)
