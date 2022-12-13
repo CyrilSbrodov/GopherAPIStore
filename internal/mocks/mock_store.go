@@ -34,21 +34,6 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// Auth mocks base method.
-func (m *MockStorage) Auth(arg0 string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Auth", arg0)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Auth indicates an expected call of Auth.
-func (mr *MockStorageMockRecorder) Auth(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Auth", reflect.TypeOf((*MockStorage)(nil).Auth), arg0)
-}
-
 // CollectOrder mocks base method.
 func (m *MockStorage) CollectOrder(arg0, arg1 string) (int, error) {
 	m.ctrl.T.Helper()
@@ -83,9 +68,9 @@ func (mr *MockStorageMockRecorder) GetAllOrders() *gomock.Call {
 func (m *MockStorage) GetBalance(arg0 string) (*storage.Balance, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBalance", arg0)
-	ret0, _ := ret[0].(storage.Balance)
+	ret0, _ := ret[0].(*storage.Balance)
 	ret1, _ := ret[1].(error)
-	return &ret0, ret1
+	return ret0, ret1
 }
 
 // GetBalance indicates an expected call of GetBalance.
@@ -150,4 +135,49 @@ func (m *MockStorage) UpdateOrders(arg0 []storage.Orders) error {
 func (mr *MockStorageMockRecorder) UpdateOrders(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrders", reflect.TypeOf((*MockStorage)(nil).UpdateOrders), arg0)
+}
+
+// UpdateUserBalance mocks base method.
+func (m *MockStorage) UpdateUserBalance(arg0 []storage.Orders) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateUserBalance", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateUserBalance indicates an expected call of UpdateUserBalance.
+func (mr *MockStorageMockRecorder) UpdateUserBalance(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserBalance", reflect.TypeOf((*MockStorage)(nil).UpdateUserBalance), arg0)
+}
+
+// Withdraw mocks base method.
+func (m *MockStorage) Withdraw(arg0 string, arg1 *storage.Order) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Withdraw", arg0, arg1)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Withdraw indicates an expected call of Withdraw.
+func (mr *MockStorageMockRecorder) Withdraw(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Withdraw", reflect.TypeOf((*MockStorage)(nil).Withdraw), arg0, arg1)
+}
+
+// Withdrawals mocks base method.
+func (m *MockStorage) Withdrawals(arg0 string) (int, []storage.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Withdrawals", arg0)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].([]storage.Order)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Withdrawals indicates an expected call of Withdrawals.
+func (mr *MockStorageMockRecorder) Withdrawals(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Withdrawals", reflect.TypeOf((*MockStorage)(nil).Withdrawals), arg0)
 }

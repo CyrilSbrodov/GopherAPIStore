@@ -95,19 +95,15 @@ func (a *Agent) GetAccrual(orders []storage.Orders) ([]storage.Orders, error) {
 	return updatedOrders, nil
 }
 
-func (a *Agent) UpdateOrders(orders []storage.Orders) error {
-	return nil
-}
-
 func (a *Agent) UploadOrders(orders []storage.Orders) error {
 	o := make(map[string]string)
 	for _, order := range orders {
 		o["order"] = order.Order
-		orderJson, err := json.Marshal(o)
+		orderJSON, err := json.Marshal(o)
 		if err != nil {
 			a.logger.LogErr(err, "")
 		}
-		req, err := http.NewRequest(http.MethodPost, a.cfg.Accrual+"/api/orders", bytes.NewBuffer(orderJson))
+		req, err := http.NewRequest(http.MethodPost, a.cfg.Accrual+"/api/orders", bytes.NewBuffer(orderJSON))
 
 		if err != nil {
 			a.logger.LogErr(err, "Failed to request")
