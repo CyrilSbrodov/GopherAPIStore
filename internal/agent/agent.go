@@ -2,6 +2,7 @@ package agent
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -61,7 +62,6 @@ func (a *Agent) GetAccrual(orders []storage.Orders) ([]storage.Orders, error) {
 	for _, o := range orders {
 		var order storage.Orders
 		req, err := http.NewRequest(http.MethodGet, a.cfg.Accrual+"/api/orders/"+o.Order, nil)
-
 		if err != nil {
 			a.logger.LogErr(err, "Failed to request")
 			break
@@ -81,12 +81,13 @@ func (a *Agent) GetAccrual(orders []storage.Orders) ([]storage.Orders, error) {
 		}
 		if resp.StatusCode == 429 {
 			return updatedOrders, nil
-		}
-		if resp.StatusCode == 204 {
+		} else if resp.StatusCode == 204 {
 			continue
+		} else if resp.StatusCode == 500 {
+			return updatedOrders, fmt.Errorf("error from accrual system")
 		}
 		if err := json.Unmarshal(res, &order); err != nil {
-			a.logger.LogErr(err, "Failed to read body")
+			a.logger.LogErr(err, "Failed to unmarshal")
 			break
 		}
 		order.Order = o.Order
