@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -41,10 +40,6 @@ func (a *Agent) Start(ticker time.Ticker) {
 		if orders == nil {
 			continue
 		}
-		//обновление заказов во внешней системе
-		//if err = a.UploadOrders(orders); err != nil {
-		//	a.logger.LogErr(err, "")
-		//}
 		//получение списка обновленных ореров из внешней системы
 		updatedOrders, err := a.GetAccrual(orders)
 		if err != nil {
@@ -100,37 +95,4 @@ func (a *Agent) GetAccrual(orders []storage.Orders) ([]storage.Orders, error) {
 		resp.Body.Close()
 	}
 	return updatedOrders, nil
-}
-
-func (a *Agent) UploadOrders(orders []storage.Orders) error {
-	o := make(map[string]string)
-	for _, order := range orders {
-		o["order"] = order.Order
-		orderJSON, err := json.Marshal(o)
-		if err != nil {
-			a.logger.LogErr(err, "")
-		}
-		req, err := http.NewRequest(http.MethodPost, a.cfg.Accrual+"/api/orders", bytes.NewBuffer(orderJSON))
-
-		if err != nil {
-			a.logger.LogErr(err, "Failed to request")
-			break
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Add("Accept", "application/json")
-
-		resp, err := a.client.Do(req)
-		if err != nil {
-			a.logger.LogErr(err, "Failed to do request")
-			break
-		}
-		_, err = io.ReadAll(resp.Body)
-		if err != nil {
-			a.logger.LogErr(err, "Failed to read body")
-			break
-		}
-
-		resp.Body.Close()
-	}
-	return nil
 }
