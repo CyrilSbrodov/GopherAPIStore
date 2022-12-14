@@ -42,9 +42,9 @@ func (a *Agent) Start(ticker time.Ticker) {
 			continue
 		}
 		//обновление заказов во внешней системе
-		if err = a.UploadOrders(orders); err != nil {
-			a.logger.LogErr(err, "")
-		}
+		//if err = a.UploadOrders(orders); err != nil {
+		//	a.logger.LogErr(err, "")
+		//}
 		//получение списка обновленных ореров из внешней системы
 		updatedOrders, err := a.GetAccrual(orders)
 		if err != nil {
