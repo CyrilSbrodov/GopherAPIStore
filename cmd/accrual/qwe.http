@@ -1,0 +1,35 @@
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+
+{
+  "order": "1214472316"
+}
+### GET request with a header
+POST http://localhost:8282/api/user/orders
+
+ 7777777777
+
+
+### GET request with a header
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+
+{
+  "order": "12345678911"
+}
+
+### GET request with a header
+GET http://localhost:8080/api/orders/7777777777
+Accept: application/json
+
+### GET request with a header
+GET http://localhost:8080/api/orders/1214472316
+Accept: application/json
+
+### GET request with a header
+POST http://localhost:8282/api/user/orders
+Content-Type: application/json
+
+{
+  "order": "12345678911"
+}
